@@ -28,7 +28,7 @@ LOG = minimal_logger(__name__)
 
 def prepare_for_ssh(env_name, instance, keep_open, force, setup, number,
                     keyname=None, no_keypair_error_message=None,
-                    custom_ssh=None, command=None, timeout=None):
+                    custom_ssh=None, command=None, timeout=None, private_ip=None):
     if setup:
         setup_ssh(env_name, keyname, timeout=timeout)
         return
@@ -60,7 +60,8 @@ def prepare_for_ssh(env_name, instance, keep_open, force, setup, number,
             keep_open=keep_open,
             force_open=force,
             custom_ssh=custom_ssh,
-            command=command
+            command=command,
+            private_ip=private_ip,
         )
     except NoKeypairError:
         if not no_keypair_error_message:
@@ -83,19 +84,18 @@ def setup_ssh(env_name, keyname, timeout=None):
         commonops.update_environment(env_name, options, False, timeout=timeout or 5)
 
 
-def ssh_into_instance(instance_id, keep_open=False, force_open=False, custom_ssh=None, command=None):
+def ssh_into_instance(instance_id, keep_open=False, force_open=False, custom_ssh=None, command=None, private_ip=None):
     instance = ec2.describe_instance(instance_id)
     try:
         keypair_name = instance['KeyName']
     except KeyError:
         raise NoKeypairError()
-    try:
+    if not private_ip and 'PublicIpAddress' in instance:
         ip = instance['PublicIpAddress']
-    except KeyError:
-        if 'PrivateIpAddress' in instance:
-            ip = instance['PrivateIpAddress']
-        else:
-            raise NotFoundError(strings['ssh.noip'])
+    elif 'PrivateIpAddress' in instance:
+        ip = instance['PrivateIpAddress']
+    else:
+        raise NotFoundError(strings['ssh.noip'])
     security_groups = instance['SecurityGroups']
 
     user = 'ec2-user'

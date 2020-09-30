@@ -35,6 +35,8 @@ class SSHController(AbstractBaseController):
             (['--setup'], dict(
                 action='store_true', help=flag_text['ssh.setup'])),
             (['--timeout'], dict(type=int, help=flag_text['ssh.timeout'])),
+            (['-p', '--private_ip'], dict(
+                action='store_true', help=flag_text['ssh.private_ip'])),
         ]
 
     def do_command(self):
@@ -47,6 +49,7 @@ class SSHController(AbstractBaseController):
         force = self.app.pargs.force
         setup = self.app.pargs.setup
         timeout = self.app.pargs.timeout
+        private_ip = self.app.pargs.private_ip
 
         if timeout and not setup:
             raise InvalidOptionsError(strings['ssh.timeout_without_setup'])
@@ -60,5 +63,6 @@ class SSHController(AbstractBaseController):
                 number=number,
                 custom_ssh=custom_ssh,
                 command=cmd,
-                timeout=timeout
+                timeout=timeout,
+                private_ip=private_ip,
         )
